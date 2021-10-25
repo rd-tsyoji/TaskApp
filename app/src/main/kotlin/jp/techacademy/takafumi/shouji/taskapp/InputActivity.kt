@@ -31,14 +31,19 @@ class InputActivity : AppCompatActivity() {
      * 日付設定が押されたときの処理
      */
     private val mOnDateClickListener = View.OnClickListener {
-        val datePickerDialog = DatePickerDialog(this,
+        val datePickerDialog = DatePickerDialog(
+            this,
             DatePickerDialog.OnDateSetListener { _, year, month, dayOfMonth ->
                 mYear = year
                 mMonth = month
                 mDay = dayOfMonth
-                val dateString = mYear.toString() + "/" + String.format("%02d", mMonth + 1) + "/" + String.format("%02d", mDay)
+                val dateString = "$mYear/" + String.format(
+                    "%02d",
+                    mMonth + 1
+                ) + "/" + String.format("%02d", mDay)
                 binding.input.dateButton.text = dateString
-            }, mYear, mMonth, mDay)
+            }, mYear, mMonth, mDay
+        )
         datePickerDialog.show()
     }
 
@@ -46,13 +51,15 @@ class InputActivity : AppCompatActivity() {
      * 時刻設定が押されたときの処理
      */
     private val mOnTimeClickListener = View.OnClickListener {
-        val timePickerDialog = TimePickerDialog(this,
+        val timePickerDialog = TimePickerDialog(
+            this,
             TimePickerDialog.OnTimeSetListener { _, hour, minute ->
                 mHour = hour
                 mMinute = minute
                 val timeString = String.format("%02d", mHour) + ":" + String.format("%02d", mMinute)
                 binding.input.timesButton.text = timeString
-            }, mHour, mMinute, false)
+            }, mHour, mMinute, false
+        )
         timePickerDialog.show()
     }
 
@@ -61,6 +68,13 @@ class InputActivity : AppCompatActivity() {
      */
     private val mOnDoneClickListener = View.OnClickListener {
         addTask()
+        finish()
+    }
+
+    /**
+     * キャンセルボタンが押されたときの処理
+     */
+    private val mOnCancelClickListener = View.OnClickListener {
         finish()
     }
 
@@ -80,6 +94,7 @@ class InputActivity : AppCompatActivity() {
         binding.input.dateButton.setOnClickListener(mOnDateClickListener)
         binding.input.timesButton.setOnClickListener(mOnTimeClickListener)
         binding.input.doneButton.setOnClickListener(mOnDoneClickListener)
+        binding.input.cancelButton.setOnClickListener(mOnCancelClickListener)
 
         // EXTRA_TASKからTaskのidを取得して、 idからTaskのインスタンスを取得する
         val intent = intent
@@ -99,6 +114,7 @@ class InputActivity : AppCompatActivity() {
         } else {
             // 更新の場合
             binding.input.titleEditText.setText(mTask!!.title)
+            binding.input.categoryEditText.setText(mTask!!.category)
             binding.input.contentEditText.setText(mTask!!.contents)
 
             val calendar = Calendar.getInstance()
@@ -109,7 +125,10 @@ class InputActivity : AppCompatActivity() {
             mHour = calendar.get(Calendar.HOUR_OF_DAY)
             mMinute = calendar.get(Calendar.MINUTE)
 
-            val dateString = mYear.toString() + "/" + String.format("%02d", mMonth + 1) + "/" + String.format("%02d", mDay)
+            val dateString = "$mYear/" + String.format(
+                "%02d",
+                mMonth + 1
+            ) + "/" + String.format("%02d", mDay)
             val timeString = String.format("%02d", mHour) + ":" + String.format("%02d", mMinute)
 
             binding.input.dateButton.text = dateString
@@ -142,9 +161,11 @@ class InputActivity : AppCompatActivity() {
         }
 
         val title = binding.input.titleEditText.text.toString()
+        val category = binding.input.categoryEditText.text.toString()
         val content = binding.input.contentEditText.text.toString()
 
         mTask!!.title = title
+        mTask!!.category = category
         mTask!!.contents = content
         val calendar = GregorianCalendar(mYear, mMonth, mDay, mHour, mMinute)
         val date = calendar.time

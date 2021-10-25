@@ -9,9 +9,11 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.SearchView
 import androidx.appcompat.app.AlertDialog
 import io.realm.Realm
 import io.realm.RealmChangeListener
+import io.realm.RealmResults
 import io.realm.Sort
 import jp.techacademy.takafumi.shouji.taskapp.databinding.ActivityMainBinding
 import java.util.*
@@ -23,12 +25,25 @@ class MainActivity : AppCompatActivity() {
     private lateinit var binding: ActivityMainBinding
     private lateinit var mTaskAdapter: TaskAdapter
     private lateinit var mRealm: Realm
+    private lateinit var taskRealmResults: RealmResults<Task>
     private val mRealmListener = RealmChangeListener<Realm> { reloadListView() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        binding.search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                if (!query.isNullOrEmpty()) searchTaskByCategory(query)
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                if (newText.isNullOrEmpty()) reloadListView() else searchTaskByCategory(newText)
+                return true
+            }
+        })
 
         binding.fab.setOnClickListener { view ->
             val intent = Intent(this, InputActivity::class.java)
@@ -62,7 +77,7 @@ class MainActivity : AppCompatActivity() {
             builder.setTitle("削除")
             builder.setMessage(task.title + "を削除しますか")
 
-            builder.setPositiveButton("OK"){_, _ ->
+            builder.setPositiveButton("OK") { _, _ ->
                 // Realmからデータを削除
                 val results = mRealm.where(Task::class.java).equalTo("id", task.id).findAll()
                 mRealm.beginTransaction()
@@ -111,11 +126,31 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    /**
+     * ListViewをリロード
+     */
     private fun reloadListView() {
         // Realmデータベースから、「すべてのデータを取得して新しい日時順に並べた結果」を取得
-        val taskRealmResults = mRealm.where(Task::class.java).findAll().sort("date", Sort.DESCENDING)
+        taskRealmResults = mRealm.where(Task::class.java).findAll().sort("date", Sort.DESCENDING)
 
-        // 上記の結果を、TaskListとしてセットする
+        showTaskList()
+    }
+
+    /**
+     * カテゴリ検索処理
+     */
+    private fun searchTaskByCategory(queryString: String) {
+        // カテゴリで検索を実施
+        taskRealmResults = mRealm.where(Task::class.java).equalTo("category", queryString).findAll()
+            .sort("date", Sort.DESCENDING)
+        showTaskList()
+    }
+
+    /**
+     * タスク一覧表示処理
+     */
+    private fun showTaskList() {
+        // 検索結果(リロード時は全て)を、TaskListとしてセットする
         mTaskAdapter.mTaskList = mRealm.copyFromRealm(taskRealmResults)
 
         // TaskのListView用のアダプタに渡す
@@ -128,16 +163,5 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         mRealm.close()
-    }
-
-    private fun addTaskForTest() {
-        val task = Task()
-        task.title = "作業"
-        task.contents = "プログラムを書いてPUSHする"
-        task.date = Date()
-        task.id = 0
-        mRealm.beginTransaction()
-        mRealm.copyToRealmOrUpdate(task)
-        mRealm.commitTransaction()
     }
 }

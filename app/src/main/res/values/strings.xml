@@ -9,4 +9,11 @@
 
     <string name="hello_first_fragment">Hello first fragment</string>
     <string name="hello_second_fragment">Hello second fragment. Arg: %1$s</string>
+    <string name="INPUT_LABEL_CONTENT">内容</string>
+    <string name="DEFAULT_LABEL_DATE">----/--/--</string>
+    <string name="DEFAULT_LABEL_TIME">--:--</string>
+    <string name="LABEL_OK">決定</string>
+    <string name="INPUT_LABEL_TITLE">タイトル</string>
+    <string name="INPUT_LABEL_CATEGORY">カテゴリ</string>
+    <string name="LABEL_CANCEL">キャンセル</string>
 </resources>

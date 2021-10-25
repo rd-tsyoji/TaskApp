@@ -7,6 +7,7 @@ import java.util.*
 
 open class Task: RealmObject(), Serializable {
     var title: String = ""      // タイトル
+    var category: String = ""   // カテゴリ
     var contents: String = ""   // 内容
     var date: Date = Date()     // 日時
 

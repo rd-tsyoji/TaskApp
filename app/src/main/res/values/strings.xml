@@ -16,4 +16,6 @@
     <string name="INPUT_LABEL_TITLE">タイトル</string>
     <string name="INPUT_LABEL_CATEGORY">カテゴリ</string>
     <string name="LABEL_CANCEL">キャンセル</string>
+    <string name="LABEL_SEARCH">検索</string>
+    <string name="CREATE_CATEGORY">カテゴリ作成</string>
 </resources>

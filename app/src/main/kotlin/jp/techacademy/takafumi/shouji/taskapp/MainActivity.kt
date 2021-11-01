@@ -9,7 +9,9 @@ import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
+import android.widget.ArrayAdapter
 import android.widget.SearchView
+import android.widget.Spinner
 import androidx.appcompat.app.AlertDialog
 import io.realm.Realm
 import io.realm.RealmChangeListener
@@ -19,13 +21,14 @@ import jp.techacademy.takafumi.shouji.taskapp.databinding.ActivityMainBinding
 import java.util.*
 
 const val EXTRA_TASK = "jp.techacademy.takafumi.shouji.taskapp.TASK"
+const val NO_CATEGORY = "カテゴリ無し"
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : BaseActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var mTaskAdapter: TaskAdapter
-    private lateinit var mRealm: Realm
     private lateinit var taskRealmResults: RealmResults<Task>
+    private lateinit var spinner: Spinner
     private val mRealmListener = RealmChangeListener<Realm> { reloadListView() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -33,26 +36,24 @@ class MainActivity : AppCompatActivity() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.search.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                if (!query.isNullOrEmpty()) searchTaskByCategory(query)
-                return true
+        binding.searchButton.setOnClickListener{
+            val selectedCategory = spinner.selectedItem as String
+            if (selectedCategory == NO_CATEGORY) {
+                reloadListView()
+            } else {
+                searchTaskByCategory(selectedCategory)
             }
+        }
 
-            override fun onQueryTextChange(newText: String?): Boolean {
-                if (newText.isNullOrEmpty()) reloadListView() else searchTaskByCategory(newText)
-                return true
-            }
-        })
-
-        binding.fab.setOnClickListener { view ->
+        binding.fab.setOnClickListener {
             val intent = Intent(this, InputActivity::class.java)
             startActivity(intent)
         }
 
         // Realmの設定
-        mRealm = Realm.getDefaultInstance()
         mRealm.addChangeListener(mRealmListener)
+
+        spinner = findViewById<Spinner>(R.id.spinner)
 
         // ListViewの設定
         mTaskAdapter = TaskAdapter(this)
@@ -132,8 +133,8 @@ class MainActivity : AppCompatActivity() {
     private fun reloadListView() {
         // Realmデータベースから、「すべてのデータを取得して新しい日時順に並べた結果」を取得
         taskRealmResults = mRealm.where(Task::class.java).findAll().sort("date", Sort.DESCENDING)
-
         showTaskList()
+        reloadSpinner()
     }
 
     /**
@@ -141,8 +142,9 @@ class MainActivity : AppCompatActivity() {
      */
     private fun searchTaskByCategory(queryString: String) {
         // カテゴリで検索を実施
-        taskRealmResults = mRealm.where(Task::class.java).equalTo("category", queryString).findAll()
-            .sort("date", Sort.DESCENDING)
+        taskRealmResults =
+            mRealm.where(Task::class.java).equalTo("category.name", queryString).findAll()
+                .sort("date", Sort.DESCENDING)
         showTaskList()
     }
 
@@ -160,8 +162,16 @@ class MainActivity : AppCompatActivity() {
         mTaskAdapter.notifyDataSetChanged()
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        mRealm.close()
+    /**
+     * カテゴリSpinnerをリロード
+     */
+    private fun reloadSpinner() {
+        val resultCategories: RealmResults<Category> =
+            mRealm.where(Category::class.java).findAll().sort("id", Sort.DESCENDING)
+        val categoryList = mutableListOf(NO_CATEGORY)
+        resultCategories.forEach { categoryList.add(it.name) }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categoryList)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
     }
 }

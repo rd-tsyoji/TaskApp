@@ -5,20 +5,28 @@ import android.app.DatePickerDialog
 import android.app.PendingIntent
 import android.app.TimePickerDialog
 import android.content.Intent
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import androidx.appcompat.widget.Toolbar
 import android.view.View
+import android.widget.ArrayAdapter
+import android.widget.Spinner
+import androidx.core.view.get
+import androidx.core.view.iterator
 import io.realm.Realm
+import io.realm.RealmChangeListener
+import io.realm.RealmResults
+import io.realm.Sort
 import jp.techacademy.takafumi.shouji.taskapp.databinding.ActivityInputBinding
 import java.util.*
 
 /**
  * タスクの入力画面
  */
-class InputActivity : AppCompatActivity() {
+class InputActivity : BaseActivity() {
 
     private lateinit var binding: ActivityInputBinding
+    private lateinit var spinner: Spinner
+    private val mRealmListener = RealmChangeListener<Realm> { reloadSpinner() }
 
     private var mYear = 0
     private var mMonth = 0
@@ -78,6 +86,19 @@ class InputActivity : AppCompatActivity() {
         finish()
     }
 
+    /**
+     * カテゴリSpinnerをリロード
+     */
+    private fun reloadSpinner() {
+        val resultCategories: RealmResults<Category> =
+            mRealm.where(Category::class.java).findAll().sort("id", Sort.DESCENDING)
+        val categoryList = mutableListOf(NO_CATEGORY)
+        resultCategories.forEach { categoryList.add(it.name) }
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, categoryList)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinner.adapter = adapter
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityInputBinding.inflate(layoutInflater)
@@ -90,11 +111,21 @@ class InputActivity : AppCompatActivity() {
             supportActionBar!!.setDisplayHomeAsUpEnabled(true)
         }
 
+        // Realmの設定
+        mRealm.addChangeListener(mRealmListener)
+
+        spinner = findViewById<Spinner>(R.id.spinner)
+        reloadSpinner()
+
         // UI部品の設定
         binding.input.dateButton.setOnClickListener(mOnDateClickListener)
         binding.input.timesButton.setOnClickListener(mOnTimeClickListener)
         binding.input.doneButton.setOnClickListener(mOnDoneClickListener)
         binding.input.cancelButton.setOnClickListener(mOnCancelClickListener)
+        binding.input.createCategoryButton.setOnClickListener {
+            val intent = Intent(this, CreateCategoryActivity::class.java)
+            startActivity(intent)
+        }
 
         // EXTRA_TASKからTaskのidを取得して、 idからTaskのインスタンスを取得する
         val intent = intent
@@ -114,7 +145,12 @@ class InputActivity : AppCompatActivity() {
         } else {
             // 更新の場合
             binding.input.titleEditText.setText(mTask!!.title)
-            binding.input.categoryEditText.setText(mTask!!.category)
+            for (i in 0 until spinner.count) {
+                if (spinner.getItemAtPosition(i) == mTask!!.category?.name) {
+                    spinner.setSelection(i)
+                    break
+                }
+            }
             binding.input.contentEditText.setText(mTask!!.contents)
 
             val calendar = Calendar.getInstance()
@@ -161,11 +197,12 @@ class InputActivity : AppCompatActivity() {
         }
 
         val title = binding.input.titleEditText.text.toString()
-        val category = binding.input.categoryEditText.text.toString()
+        val categoryString = spinner.selectedItem as String
         val content = binding.input.contentEditText.text.toString()
 
         mTask!!.title = title
-        mTask!!.category = category
+        val selectCategory = mRealm.where(Category::class.java).equalTo("name", categoryString).findAll()
+        mTask!!.category = if (selectCategory.size > 0) selectCategory[0] else null
         mTask!!.contents = content
         val calendar = GregorianCalendar(mYear, mMonth, mDay, mHour, mMinute)
         val date = calendar.time

@@ -5,11 +5,21 @@ import io.realm.RealmObject
 import io.realm.annotations.PrimaryKey
 import java.util.*
 
-open class Task: RealmObject(), Serializable {
-    var title: String = ""      // タイトル
-    var category: String = ""   // カテゴリ
-    var contents: String = ""   // 内容
-    var date: Date = Date()     // 日時
+/**
+ * タスク エンティティクラス
+ */
+open class Task : RealmObject(), Serializable {
+    // タイトル
+    var title: String = ""
+
+    // カテゴリ
+    var category: Category? = Category()
+
+    // 内容
+    var contents: String = ""
+
+    // 日時
+    var date: Date = Date()
 
     // idをプライマリーキーとして設定
     @PrimaryKey
